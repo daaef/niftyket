@@ -28,9 +28,9 @@
                     <option
                       v-for="(aStore, i) in store.stores"
                       :key="i"
-                      :value="aStore.id"
+                      :value="aStore.minter_id"
                     >
-                      {{ aStore.name }}
+                      {{ aStore.nft_contracts.name }}
                     </option>
                   </select>
                 </div>
@@ -43,7 +43,7 @@
               </p>
               <div class="mt-5">
                 <b-field>
-                  <b-upload v-model="dropFile" drag-drop>
+                  <b-upload v-model="event_banner" drag-drop>
                     <section class="section">
                       <div class="content has-text-centered">
                         <p>PNG,JPG,JPEG,SVG, (Max-50mb)</p>
@@ -53,9 +53,9 @@
                   </b-upload>
                 </b-field>
 
-                <div class="tags">
+                <div v-if="event_banner.name" class="tags">
                   <span class="tag is-primary">
-                    {{ dropFile.name }}
+                    {{ event_banner.name }}
                   </span>
                 </div>
               </div>
@@ -69,7 +69,7 @@
               </div>
               <div class="grid ticket--image">
                 <div class="mt-5">
-                  <h3>Ticket Video or Flyer</h3>
+                  <h3>Ticket Flyer</h3>
                   <p>
                     This image or Video will serve as a means of attractions.
                     for user to buy the ticket. as the dimensions change on
@@ -78,31 +78,22 @@
                 </div>
                 <div class="mt-5">
                   <b-field>
-                    <b-upload v-model="dropFiles" multiple drag-drop>
+                    <b-upload v-model="ticket_flyer" drag-drop>
                       <section class="section">
                         <div class="content has-text-centered">
-                          <p>PNG,JPG,JPEG,SVG, (Max-50mb)</p>
-                          <nif-btn> Upload Video/Flyer </nif-btn>
+                          <p>PNG,JPG,JPEG,SVG,GIF (Max-50mb)</p>
+                          <nif-btn> Upload Flyer Image </nif-btn>
                         </div>
                       </section>
                     </b-upload>
                   </b-field>
 
-                  <div class="tags">
-                    <span
-                      v-for="(file, index) in dropFiles"
-                      :key="index"
-                      class="tag is-primary"
-                    >
-                      {{ file.name }}
-                      <button
-                        class="delete is-small"
-                        type="button"
-                        @click="deleteDropFile(index)"
-                      ></button>
+                  <div v-if="ticket_flyer.name" class="tags">
+                    <span class="tag is-primary">
+                      {{ ticket_flyer.name }}
                     </span>
                   </div>
-                </div>
+              </div>
               </div>
               <div class="mt-12">
                 <b-field label="Ticket Decription">
@@ -196,7 +187,7 @@
                     </div>
                     <div class="collapse-content">
                       <b-field>
-                        <b-input placeholder="3 NEAR"></b-input>
+                        <b-input v-model="ticketCost" placeholder="3 NEAR"></b-input>
                       </b-field>
                     </div>
                   </div>
@@ -251,12 +242,12 @@
               </div>
               <div class="mt-12">
                 <b-field label="Royalties">
-                  <b-input placeholder="How to share royalties"></b-input>
+                  <b-input v-model="royalties" placeholder="How to share royalties"></b-input>
                 </b-field>
               </div>
               <div class="mt-12">
                 <b-field label="Split Revenue">
-                  <b-input placeholder="How to Split Revenue"></b-input>
+                  <b-input v-model="splits" placeholder="How to Split Revenue"></b-input>
                 </b-field>
               </div>
               <div class="flex action--btns mt-12 justify-between">
@@ -266,7 +257,7 @@
                 >
                   Cancel
                 </button>
-                <button class="def--btn btn" @click.prevent="mintTicket">
+                <button class="def--btn btn capitalize" @click.prevent="mintTicket">
                   Create
                 </button>
                 <!--                <nif-btn @click.prevent="mintTicket"> Create Ticket </nif-btn>-->
@@ -294,14 +285,17 @@ export default {
     return {
       event_category: '',
       price_category: 'VVIP',
-      dropFiles: [],
-      dropFile: {},
+      event_banner: {},
+      ticket_flyer: {},
       locale: 'en-US',
       mintStore: '',
       minter: 'aef.testnet',
       ticketName: '',
+      ticketCost: '',
       amount: 0,
       eventTime: new Date(),
+      royalties: '',
+      splits: '',
       venue: '',
       description: '',
       isMinting: false,
@@ -321,7 +315,6 @@ export default {
     ]),
   },
   async mounted() {
-    await this.store.fetchNiftyStore()
     await this.store.fetchMinterStores()
   },
   methods: {
@@ -337,7 +330,7 @@ export default {
       if (!this.mintStore) {
         this.$buefy.toast.open({
           duration: 5000,
-          message: 'You need a Store tot mint tickets',
+          message: 'You need a Store to mint tickets',
           position: 'is-top-right',
           type: 'is-danger',
         })
@@ -354,17 +347,28 @@ export default {
 
       console.log('minting 3')
       this.isMinting = true
-      const uploadData = await this.wallet.minter.uploadField(
+      const { data: bannerUploadResult, error: bannerError } = await this.wallet.minter.uploadField(
         MetadataField.Media,
-        this.dropFile
+        this.ticket_flyer
       )
-      console.log('minting 4', uploadData)
-      if (uploadData.error) {
+      console.log('minting 4', bannerUploadResult)
+      if (bannerError) {
+        return
+      }
+      const { data: flyerUploadResult, error: flyerError } = await this.wallet.minter.uploadField(
+        MetadataField.Animation_url,
+        this.event_banner
+      )
+      console.log('minting 4', flyerUploadResult)
+      if (flyerError) {
         return
       }
       const extraData = await this.wallet.minter.setField(MetadataField.Extra, {
         venue: this.venue,
         time: this.eventTime,
+        eventDate: this.selected,
+        price_category: this.price_category,
+        cost: this.ticketCost
       })
       console.log('minting 5', extraData)
       if (extraData.error) {
@@ -375,18 +379,54 @@ export default {
         description: this.description,
       })
       console.log('minting 6', metaStuff)
+      const { data: metadataId, error } = await this.wallet.minter.getMetadataId();
+
+      if (error) {
+        // TODO: throw error
+        return;
+      }
       try {
         await this.wallet.mint(
           +this.amount,
           this.mintStore,
           undefined,
           undefined,
-          this.event_category
+          this.event_category,
+          {
+            callbackUrl: `${window.location.origin}/events`,
+            meta: JSON.stringify({
+              type: 'mint',
+              args: {
+                contractAddress: this.mintStore,
+                amount: this.amount,
+                thingId: `${metadataId}:${this.mintStore}`,
+              },
+            }),
+            royaltyPercentage: this.royalties?.percentage || 0,
+            metadataId,
+          },
         )
       } catch (e) {
         return e
       }
       this.isMinting = false
+    },
+    resetForm(){
+      this.event_category = ''
+      this.price_category = 'VVIP'
+      this.event_banner = {}
+      this.ticket_flyer = {}
+      this.locale = 'en-US'
+      this.mintStore = ''
+      this.minter = 'aef.testnet'
+      this.ticketName = ''
+      this.ticketCost = ''
+      this.amount = 0
+      this.eventTime = new Date()
+      this.royalties = ''
+      this.splits = ''
+      this.venue = ''
+      this.description = ''
     },
     clearDate() {
       this.selected = null

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { minterStores, fetchStore } from '@/queries/queries'
+import { minterStores, fetchStore, nftMetadata } from "@/queries/queries";
 
 export const useStore = defineStore('main', {
   state: () => ({
@@ -14,6 +14,7 @@ export const useStore = defineStore('main', {
     loading: false,
     creator: true,
     stores: [],
+    metadata: [],
     niftyStore: {},
     myStore: {},
     activeThing: {},
@@ -50,10 +51,14 @@ export const useStore = defineStore('main', {
       this.setupWallet().then(async () => {
         const query = minterStores
         const variables = { minter: `${this.details.accountId}` }
-        const data = await this.$nuxt.$graphql.default.request(query, variables)
-        this.stores = data.store
+        console.log('logging response')
+        await this.$nuxt.$graphql.default.request(query, variables)
+          .then(res => {
+            this.stores = res.mb_store_minters;
+          })
+        /* this.stores = data.mb_store_minters
         console.log('accountId is', await this.wallet)
-        await console.log('wallet is', this.wallet)
+        await console.log('wallet is', this.wallet) */
       })
     },
     fetchNiftyStore() {
@@ -66,6 +71,19 @@ export const useStore = defineStore('main', {
         }
         const data = await this.$nuxt.$graphql.default.request(query, variables)
         this.niftyStore = data.store
+      })
+    },
+    async fetchMetaData(storeId) {
+      await this.setupWallet().then(async () => {
+        const query = nftMetadata
+        const variables = {
+          contractId: storeId
+        }
+        await this.$nuxt.$graphql.default.request(query, variables)
+          .then(res => {
+            this.metadata = res.mb_views_nft_metadata;
+          })
+
       })
     },
     async fetchUserStore(storeId) {

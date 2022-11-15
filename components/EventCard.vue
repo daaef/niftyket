@@ -26,13 +26,13 @@
       </div>
       <figure class="px-5 pt-5">
         <img
-          src="https://placeimg.com/400/225/arch"
+          :src="meta.reference_blob.media"
           alt="Shoes"
           class="rounded-xl"
         />
       </figure>
       <div class="card-body px-5 pt-5 text-left">
-        <h3>Radium Animated Monster</h3>
+        <h3>{{ meta.title }}</h3>
         <div class="divider"></div>
         <div class="mr-5">
           <div class="avatar">
@@ -54,6 +54,13 @@ export default {
       type: Boolean,
       default() {
         return false
+      },
+      required: false,
+    },
+    meta: {
+      type: Object,
+      default() {
+        return {}
       },
       required: false,
     },

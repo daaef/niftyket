@@ -14,7 +14,7 @@
     <main>
       <section class="home--body">
         <div class="cto--container container px-4 min-h-screen">
-          <event-card-grid />
+          <event-card-grid v-for="aStore in stores" :key="aStore.nft_contracts.id" :store-id="aStore.nft_contracts.id" />
           <div class="flex pagination justify-center mt-16">
             <div class="btn-group">
               <button class="btn">Previous</button>
@@ -29,6 +29,31 @@
     </main>
   </section>
 </template>
+
+<script>
+import { mapWritableState } from 'pinia'
+import { useStore } from "@/store";
+
+export default {
+  setup() {
+    const store = useStore()
+
+    return { store }
+  },
+  computed: {
+    ...mapWritableState(useStore, [
+      'wallet',
+      'details',
+      'isConnected',
+      'loading',
+      'stores',
+    ]),
+  },
+  async mounted() {
+    await this.store.fetchMinterStores()
+  }
+}
+</script>
 
 <style lang="scss">
 .pagination {
