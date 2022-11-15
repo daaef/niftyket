@@ -5,7 +5,7 @@
         <label tabindex="0" class="cursor-pointer">
           <img src="/dots.svg" data-uk-svg alt="" />
         </label>
-        <ul
+<!--        <ul
           tabindex="0"
           class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52"
         >
@@ -15,7 +15,7 @@
           <li>
             <a><i class="isax isax-flag"></i>Report</a>
           </li>
-        </ul>
+        </ul>-->
       </div>
     </div>
     <nuxt-link to="/ticket" class="card event--card shadow-xl">
